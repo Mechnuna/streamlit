@@ -4,7 +4,7 @@ import pandas as pd
 
 # БД c соотношением похожести товаров
 st.write("""## Соотношение похожести""")
-df = pd.read_csv('../connections_gajkovyorty.csv',index_col='name')
+df = pd.read_csv('connections_gajkovyorty.csv',index_col='name')
 instrument = st.multiselect(
         "Select tool", list(df.index))
 if not instrument:
@@ -12,7 +12,7 @@ if not instrument:
 else:
 	df.loc[instrument]
 
-with open("../connections_gajkovyorty.csv", "rb") as fp:
+with open("connections_gajkovyorty.csv", "rb") as fp:
     btn = st.download_button(
         label="Download SVG",
         data=fp,
@@ -22,7 +22,7 @@ with open("../connections_gajkovyorty.csv", "rb") as fp:
 
 # Все гайковерты
 st.write("""## Все гайковерты""")
-df = pd.read_csv('../vseinstrumenty_gajkovyorty.csv',index_col='name')
+df = pd.read_csv('vseinstrumenty_gajkovyorty.csv',index_col='name')
 instrument2 = st.multiselect(
         "Select tool", list(df.index),key='second')
 if not instrument2:
@@ -31,7 +31,7 @@ else:
 	data = df.loc[instrument2]['specifications']
 	data
 
-with open("../vseinstrumenty_gajkovyorty.csv", "rb") as fp:
+with open("vseinstrumenty_gajkovyorty.csv", "rb") as fp:
     btn = st.download_button(
         label="Download SVG",
         data=fp,
