@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 
-
 # БД c соотношением похожести товаров
 st.write("""## Соотношение похожести""")
 df = pd.read_csv('connections_gajkovyorty.csv',index_col='name')
