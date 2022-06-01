@@ -96,7 +96,7 @@ with open("connections_perforators_encor.csv", "rb") as fp:
 
 
 # Все гайковерты
-st.write("""## Все гайковерты""")
+st.write("""## Все перфораторы""")
 df = pd.read_csv('encor_perforators.csv',index_col='name')
 instrument2 = st.multiselect(
         "Select tool", list(df.index),key='second')
