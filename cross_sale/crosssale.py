@@ -33,39 +33,12 @@ def _max_width_():
     )
 
 st.set_page_config(page_icon="✂️", page_title="CSV Wrangler")
-
-# st.image("https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/285/balloon_1f388.png", width=100)
 st.image(
     "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/285/scissors_2702-fe0f.png",
     width=100,
 )
 
 st.title("Подсчет метрик модели по кросс-сейлу")
-
-# st.caption(
-#     "PRD : TBC | Streamlit Ag-Grid from Pablo Fonseca: https://pypi.org/project/streamlit-aggrid/"
-# )
-
-
-# ModelType = st.radio(
-#     "Choose your model",
-#     ["Flair", "DistilBERT (Default)"],
-#     help="At present, you can choose between 2 models (Flair or DistilBERT) to embed your text. More to come!",
-# )
-
-# with st.expander("ToDo's", expanded=False):
-#     st.markdown(
-#         """
-# -   Add pandas.json_normalize() - https://streamlit.slack.com/archives/D02CQ5Z5GHG/p1633102204005500
-# -   **Remove 200 MB limit and test with larger CSVs**. Currently, the content is embedded in base64 format, so we may end up with a large HTML file for the browser to render
-# -   **Add an encoding selector** (to cater for a wider array of encoding types)
-# -   **Expand accepted file types** (currently only .csv can be imported. Could expand to .xlsx, .txt & more)
-# -   Add the ability to convert to pivot → filter → export wrangled output (Pablo is due to change AgGrid to allow export of pivoted/grouped data)
-# 	    """
-#     )
-# 
-#     st.text("")
-
 
 c29, c30, c31 = st.columns([1, 6, 1])
 
@@ -114,10 +87,9 @@ with c30:
 from st_aggrid import GridUpdateMode, DataReturnMode
 
 gb = GridOptionsBuilder.from_dataframe(all_db)
-# enables pivoting on all columns, however i'd need to change ag grid to allow export of pivoted/grouped data, however it select/filters groups
 gb.configure_default_column()
 gb.configure_selection(selection_mode="multiple", use_checkbox=True)
-gb.configure_side_bar()  # side_bar is clearly a typo :) should by sidebar
+gb.configure_side_bar() 
 gridOptions = gb.build()
 
 st.success(
@@ -225,7 +197,7 @@ for offer_id in all_trimmer:
 top25url_dict_rec = {} # Массив для хранения рекомендаций по json
 json_elem = js["recommendations"]
 
-# Находим топ рекомендаций для каждого товара из сгенерироованного каталога
+# Находим топ рекомендаций для каждого товара из сгенерированного каталога
 for elem in json_elem:
 	top25url_mass_rec = []
 	url_json_elem = return_id(elem['urlLink'])
@@ -271,14 +243,14 @@ if show_rec:
 	st.markdown('<h2 style="font-size:24px;">ТОП 10 ТОВАРОВ ДЛЯ ТРИММЕРА</h2>', unsafe_allow_html=True)
 	m = print_top5(metrics,all_offer_id,gold_standart, top10url_dict, metrics_name)
 
-new_mtrix = []
+new_metrics = []
 new_gold = []
 for k,v in metrics.items():
   if v:
     new = []
     for i in v:
       new.append(i/100)
-    new_mtrix.append(new)
+    new_metrics.append(new)
     new_gold.append([1 for i in range(len(new))])
 
 options = st.radio("Выберите алгоритм", ['1', '2', '3'], key='algorithm_radio')
@@ -287,10 +259,10 @@ go_button = st.button('Подсчитать')
 
 if go_button:
 	if options == '1':
-		st.write(ndcg_at(new_mtrix,new_gold))
+		st.write(ndcg_at(new_metrics,new_gold))
 	elif options == '2':
 		sum = 0
-		for one_trimmer in new_mtrix:
+		for one_trimmer in new_metrics:
 			l = ndcg_at_k(one_trimmer,10,method=1)
 			sum += l
-		st.write('Итого',sum/len(new_mtrix))
+		st.write('Итого',sum/len(new_metrics))
