@@ -1,14 +1,16 @@
+from unittest import result
 import streamlit as st
 import pandas as pd
 import numpy as np
 import json
-
+import copy
+from sklearn.metrics import ndcg_score
 ###################################
 
 from st_aggrid import AgGrid
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 from st_aggrid.shared import JsCode
-
+from description import desc_alg1, desc_alg2,desc_alg3
 ###################################
 
 from functionforDownloadButtons import download_button
@@ -33,18 +35,17 @@ def _max_width_():
     )
 
 st.set_page_config(page_icon="✂️", page_title="CSV Wrangler")
+
 st.image(
     "https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/apple/285/scissors_2702-fe0f.png",
     width=100,
 )
 
-st.title("Подсчет метрик модели по кросс-сейлу")
-
 c29, c30, c31 = st.columns([1, 6, 1])
 
 with c30:
 
-	number = st.slider('Сколько баз данных нужно склеить?',1,5,key='database_count')
+	number = st.slider('Сколько дата фреймов нужно склеить?',1,5,key='database_count')
 	all_db = None
 
 	uploaded_file = st.file_uploader(
@@ -87,9 +88,10 @@ with c30:
 from st_aggrid import GridUpdateMode, DataReturnMode
 
 gb = GridOptionsBuilder.from_dataframe(all_db)
+
 gb.configure_default_column()
 gb.configure_selection(selection_mode="multiple", use_checkbox=True)
-gb.configure_side_bar() 
+gb.configure_side_bar()
 gridOptions = gb.build()
 
 st.success(
@@ -151,7 +153,7 @@ if show_table:
 
 st.text("")
 
-st.write("Загрузить JSON")
+st.write("Загрузите JSON")
 
 json_file = st.file_uploader(
 		"",
@@ -170,66 +172,59 @@ else:
 
 	st.stop()
 
-# Массив для хранения рекомендаций по золотому стандарту
-top10url_dict = {}
-gold_standart = {}
+model_recommendation = {} # Словарь для хранения рекомендаций по модели
+gold_standart = {} # Словарь для хранения рекомендаций по золотому стандарту
+numbers_gs = {} # Словарь для хранения только оценок релевантности по золотому стандарту
 
-# Переменные с offer_id всех товаров 
-all_trimmer = df.index
-all_rec = df.columns
+new_data = df
 
-for offer_id in all_trimmer:
-	top10url_mass = []
-	gold_standart_mass = []
+all_trimmer = new_data.index #url всех триммеров
+all_rec = new_data.columns #названия всех товаров для кросс-сейла
 
-	top10url = df.loc[offer_id]
-	top10url_mass=np.sort(top10url)[::-1]
-	dict_mini = {}
-	for value in top10url_mass:
-		for i in all_rec:
-			if df[i][offer_id]==value:
-				dict_mini[i] = value
-				gold_standart_mass.append(i)
-	gold_standart[return_id(offer_id)] = gold_standart_mass
-	top10url_dict[return_id(offer_id)] = dict_mini
+#запускаем цикл по ДатаФрейму
+for url in all_trimmer:
+	gold_standart_pair = {}
+	numbers_gs_mass = []
 
+	one_line = new_data.loc[url]
+	for name_rec in all_rec:
+		gold_standart_pair[name_rec.strip()]=new_data[name_rec][url]/100 # Засовываем название и оценку релевантности в словарь
+		numbers_gs_mass.append(new_data[name_rec][url]/100)
 
-top25url_dict_rec = {} # Массив для хранения рекомендаций по json
+	offer_id = return_id(url) # вырезаем offer_id из ссылки 
+	numbers_gs_mass.sort(reverse=True) # сортируем все элементы по возрастанию
+	gold_standart[offer_id] = gold_standart_pair # Засовываем по offer_id словарь с оценкой релевантности товаров
+	numbers_gs[offer_id] = numbers_gs_mass
+
 json_elem = js["recommendations"]
-
-# Находим топ рекомендаций для каждого товара из сгенерированного каталога
+# Находим рекомендаций для каждого товара
 for elem in json_elem:
-	top25url_mass_rec = []
+	model_recommendation_mass = []
 	url_json_elem = return_id(elem['urlLink'])
 	mass_rec_id = elem["recommendItems"]
-	for id in mass_rec_id:
-		top25url_mass_rec.append(id['name'])
-	top25url_dict_rec[url_json_elem] = top25url_mass_rec
+	
+	for offer_id in mass_rec_id:
+		model_recommendation_mass.append(offer_id['name'])
+	model_recommendation[url_json_elem] = model_recommendation_mass
 
-all_offer_id =[]
-for i in df.index:
-	all_offer_id.append(return_id(i))
+#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
+metrics = {} # словарь для хранения оценки релевантности к каждому товару 
+metrics_name = {} # словарь для хранения названий товаров
 
-metrics = {}
-metrics_name = {}
-for key, item in top25url_dict_rec.items():
+for offer_id, rec_mass in model_recommendation.items():
 	metrics_dic = []
 	names = []
-	for c in item:
-		try:
+	for product in rec_mass:
 			zz = 0
-			for k,v in top10url_dict[key].items():
-				if k.strip() == c:
-					metrics_dic.append(v)
-					break
-				zz+=1
-				names.append(c)
-			else:
-				metrics_dic.append(0)
-		except:
-			q = 1
-	metrics[key] = metrics_dic
-	metrics_name[key] = names
+			try:
+				metrics_dic.append(gold_standart[offer_id][product])
+				names.append(product)
+			except:
+				q = 0
+	if metrics_dic:
+		metrics[offer_id] = metrics_dic
+	if names:
+		metrics_name[offer_id] = names
 
 but3, but4, _  = st.columns(3)
 
@@ -238,31 +233,121 @@ with but3:
 with but4:
 	hide_rec = st.button("Скрыть рекомендации")
 
+
 #Посмотреть наглядно что предлагает модель и золотой стандарт
 if show_rec:
 	st.markdown('<h2 style="font-size:24px;">ТОП 10 ТОВАРОВ ДЛЯ ТРИММЕРА</h2>', unsafe_allow_html=True)
-	m = print_top5(metrics,all_offer_id,gold_standart, top10url_dict, metrics_name)
+	new_metrics, name_gs = print_top5(metrics, metrics_name, gold_standart)
 
-new_metrics = []
-new_gold = []
-for k,v in metrics.items():
-  if v:
-    new = []
-    for i in v:
-      new.append(i/100)
-    new_metrics.append(new)
-    new_gold.append([1 for i in range(len(new))])
+new_metrics, name_gs = print_top5(metrics, metrics_name, gold_standart, print_=False)
 
+
+windows = st.number_input("Задать окошко валидности", key="win1_r",value=3,step=1,
+help="Окошко валидности - допустимая погрешность в порядке товара в ленте. Например: \n\
+	[1,3,4,5,6,7] при окошке 3 товар под номером 4 может быть на 2,3,4 местах")
 options = st.radio("Выберите алгоритм", ['1', '2', '3'], key='algorithm_radio')
-
+windows //= 2
 go_button = st.button('Подсчитать')
 
 if go_button:
+
 	if options == '1':
-		st.write(ndcg_at(new_metrics,new_gold))
+
+		st.markdown("# Способ первый")
+		st.markdown(desc_alg1,unsafe_allow_html=True)
+
+		ans1, ans2 = st.columns(2)
+
+		with ans1:
+			final_gold_standart, final_model_rec = valid_product(metrics_name, name_gs, copy.deepcopy(metrics), windows)
+			expan_l = st.expander("Посмотреть DCG, MAX DCG")
+			with expan_l:
+				result_1 = ndcg_at(final_model_rec, final_gold_standart)
+			st.write("Cравнение по именам")
+			st.write(result_1)
+
+		with ans2:
+			final_gold_standart, final_model_rec = valid_product_value(metrics, numbers_gs, copy.deepcopy(metrics), windows)
+			expan_r = st.expander("Посмотреть DCG, MAX DCG")
+			with expan_r:
+				result_2 = ndcg_at(final_model_rec, final_gold_standart)
+			st.write("Cравнение по значениям")
+			st.write("Итог:",result_2)
+
 	elif options == '2':
-		sum = 0
-		for one_trimmer in new_metrics:
-			l = ndcg_at_k(one_trimmer,10,method=1)
-			sum += l
-		st.write('Итого',sum/len(new_metrics))
+
+		st.markdown("# Способ второй")
+		st.markdown(desc_alg2,unsafe_allow_html=True)
+
+		ans1, ans2 = st.columns(2)
+
+		with ans1:
+			final_model_rec = []
+			final_gold_standart = []
+			for offer_id in new_metrics:
+				final_model_rec.append(metrics[offer_id])
+				final_gold_standart.append(numbers_gs[offer_id])
+
+			sums = 0
+			expan_l = st.expander("Посмотреть DCG, MAX DCG")
+			with expan_l:
+				for i in range(len(final_model_rec)):
+					l = ndcg_at_k(final_model_rec[i], final_gold_standart[i], 10, 1)
+					sums += l
+			st.write("Сравнение по релевантности из Золотого Стандарта")
+			st.write(sums/len(final_model_rec))
+
+		with ans2:
+			m = metrics.copy()
+			final_model_rec = []
+			final_gold_standart = []
+			for met in metrics_name:
+				gs_mini = []
+				for i in range(len(metrics_name[met])):
+					if i < windows:
+						mini = 0
+					else:
+						mini = i - windows
+					if i + windows > len(metrics_name[met]):
+						maxs = len(metrics_name[met])
+					else:
+						maxs = i + windows
+					if metrics_name[met][i] == name_gs[met][i]:
+						m[met][i] = 3
+					elif metrics_name[met][i] in name_gs[met][mini:maxs]:
+						m[met][i] = 2
+					elif metrics_name[met][i] in name_gs[met]:
+						m[met][i] = 1
+					else:
+						m[met][i] = 0
+					gs_mini.append(3)
+				final_gold_standart.append(gs_mini)
+				final_model_rec.append(m[met])
+
+			sums = 0
+			expan_r = st.expander("Посмотреть DCG, MAX DCG")
+
+			with expan_r:
+				for i in range(len(final_model_rec)):
+					l = ndcg_at_k(final_model_rec[i], final_gold_standart[i], 10, 1)
+					sums += l
+			st.write("Сравнение по весам")
+			st.write(sums/len(final_model_rec))
+
+	elif options == '3':
+
+		st.markdown("# Способ третий")
+		st.markdown(desc_alg3,unsafe_allow_html=True)
+
+		final_model_rec = []
+		final_gold_standart = []
+		for offer_id in new_metrics:
+			final_model_rec.append(metrics[offer_id])
+			final_gold_standart.append(numbers_gs[offer_id])
+		summ = 0
+		for i in range(len(final_model_rec)):
+			true_relevanse = np.asarray([final_model_rec[i]])
+			score = np.asarray([final_gold_standart[i][:len(final_model_rec[i])]])
+			if len(final_model_rec[i]) > 1:
+				summ += ndcg_score(true_relevanse,score, k=10)
+		st.write(summ/len(final_model_rec))

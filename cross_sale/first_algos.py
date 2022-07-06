@@ -14,7 +14,7 @@ __all__ = [
 
 try:
     xrange
-except NameError:
+except NameError:  # python 3 does not have an 'xrange'
     xrange = range
 
 
@@ -25,9 +25,9 @@ def _require_positive_k(k):
 
 def _mean_ranking_metric(predictions, labels, metric):
     return np.mean([
-        metric(np.asarray(prd), np.asarray(labels[i]))
-        for i, prd in enumerate(predictions)
-    ])
+          metric(np.asarray(prd), np.asarray(labels[i]))
+          for i, prd in enumerate(predictions) # lazy eval if generator
+      ])
 
 
 def _warn_for_empty_labels():
@@ -50,10 +50,10 @@ def precision_at(predictions, labels, k=10, assume_unique=True):
 
 
 def mean_average_precision(predictions, labels, assume_unique=True):
-    
     def _inner_map(pred, lab):
         if lab.shape[0]:
             n = pred.shape[0]
+
             arange = np.arange(n, dtype=np.float32) + 1.  # this is the denom
             present = np.in1d(pred[:n], lab, assume_unique=assume_unique)
             prec_sum = np.ones(present.sum()).cumsum()
@@ -71,24 +71,33 @@ def ndcg_at(predictions, labels, k=10, assume_unique=True):
 
     def _inner_ndcg(pred, lab):
         if lab.shape[0]:
+            # if we do NOT assume uniqueness, the set is a bit different here
             if not assume_unique:
                 lab = np.unique(lab)
 
             n_lab = lab.shape[0]
             n_pred = pred.shape[0]
-            n = min(max(n_pred, n_lab), k)
-            arange = np.arange(n, dtype=np.float32)
-            arange = arange[:n_pred]
-            denom = np.log2(arange + 2.)
-            gains = 1. / denom
+            n = min(max(n_pred, n_lab), k)  # min(min(p, l), k)?
 
+            # similar to mean_avg_prcsn, we need an arange, but this time +2
+            # since python is zero-indexed, and the denom typically needs +1.
+            # Also need the log base2...
+            arange = np.arange(n, dtype=np.float32)  # length n
+
+            # since we are only interested in the arange up to n_pred, truncate
+            # if necessary
+            arange = arange[:n_pred]
+            denom = np.log2(arange + 2.)  # length n
+            gains = 1. / denom  # length n
+            # compute the gains where the prediction is present in the labels
             dcg_mask = np.in1d(pred[:n], lab, assume_unique=assume_unique)
             dcg = gains[dcg_mask].sum()
+            # the max DCG is sum of gains where the index < the label set size
             max_dcg = gains[arange < n_lab].sum()
-            st.write(f"dcg:{dcg}, max_dcg:{max_dcg}")
+            st.write(f"DCG: {dcg} MAX DCG: {max_dcg}")
+            if max_dcg == 0:
+              return 0
             return dcg / max_dcg
-
         else:
             return _warn_for_empty_labels()
-
     return _mean_ranking_metric(predictions, labels, _inner_ndcg)
