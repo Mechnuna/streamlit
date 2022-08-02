@@ -4,19 +4,19 @@ import pandas as pd
 options = st.radio("Выберите категорию", ['футболки', 'платья', 'рубашки'], key='algorithm_radio')
 go_button = st.button('Изменить категорию')
 
-db = '/similar/tshirt_res.csv'
-table = '/similar/tshirt.csv'
+db = 'tshirt_res.csv'
+table = 'tshirt.csv'
 	
 if go_button:
 	if options == 'футболки':
-		db = '/similar/tshirt_res.csv'
-		table = '/similar/tshirt.csv'
+		db = 'tshirt_res.csv'
+		table = 'tshirt.csv'
 	elif options == 'платья':
-		db = '/similar/dress_res.csv'
-		table = '/similar/dress.csv'
+		db = 'dress_res.csv'
+		table = 'dress.csv'
 	elif options == 'рубашки':
-		db = '/similar/shirts_res.csv'
-		table = '/similar/shirts.csv'
+		db = 'shirts_res.csv'
+		table = 'shirts.csv'
 
 # БД c соотношением похожести товаров
 st.write("""## Соотношение похожести""")
