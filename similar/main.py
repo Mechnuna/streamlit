@@ -1,22 +1,23 @@
 import streamlit as st
 import pandas as pd
+import os
 
 options = st.radio("Выберите категорию", ['футболки', 'платья', 'рубашки'], key='algorithm_radio')
 go_button = st.button('Изменить категорию')
-
-db = 'tshirt_res.csv'
-table = 'tshirt.csv'
+path = os.path.dirname(__file__)
+db = path +'/tshirt_res.csv'
+table = path +'/tshirt.csv'
 	
 if go_button:
 	if options == 'футболки':
-		db = 'tshirt_res.csv'
-		table = 'tshirt.csv'
+		db = path +'/tshirt_res.csv'
+		table = path +'/tshirt.csv'
 	elif options == 'платья':
-		db = 'dress_res.csv'
-		table = 'dress.csv'
+		db = path +'/dress_res.csv'
+		table = path +'/dress.csv'
 	elif options == 'рубашки':
-		db = 'shirts_res.csv'
-		table = 'shirts.csv'
+		db = path +'/shirts_res.csv'
+		table = path +'/shirts.csv'
 
 # БД c соотношением похожести товаров
 st.write("""## Соотношение похожести""")
