@@ -1,5 +1,6 @@
 import numpy as np
 import streamlit as st
+import copy
 
 def precision_at_k(r, k):
     """Score is precision @ k
@@ -108,7 +109,31 @@ def dcg_at_k(r, k, method=0):
             raise ValueError('method must be 0 or 1.')
     return 0.
 
+def edit_mass(rs):
+    b_mass = copy.deepcopy(rs)
+    for mass in b_mass:
+        for i in range(len(mass)):
+            if mass[i] >= 0.5:
+                mass[i] = 1
+            else:
+                mass[i] = 0
 
+    # print(b_mass)
+    return b_mass
+
+def map_mass(rs):
+    return mean_average_precision(edit_mass(rs))
+
+
+def mrr(rs):
+    mrr = 0
+    for i in edit_mass(rs):
+        try:
+            mrr += 1/(i.index(1) + 1)
+        except ValueError:
+            continue
+    return mrr/len(rs)
+    
 def ndcg_at_k(r, mass,k,  method=0,dcg_max=2):
     """Score is normalized discounted cumulative gain (ndcg)
     Relevance is positive real values.  Can use binary

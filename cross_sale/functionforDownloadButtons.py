@@ -144,17 +144,3 @@ def download_button(object_to_download, download_filename, button_text):
     # dl_link = f'<a download="{download_filename}" id="{button_id}" href="data:file/txt;base64,{b64}"><input type="button" kind="primary" value="{button_text}"></a><br></br>'
 
     st.markdown(dl_link, unsafe_allow_html=True)
-
-
-# def download_link(
-#     content, label="Download", filename="file.txt", mimetype="text/plain"
-# ):
-#     """Create a HTML link to download a string as a file."""
-#     # From: https://discuss.streamlit.io/t/how-to-download-file-in-streamlit/1806/9
-#     b64 = base64.b64encode(
-#         content.encode()
-#     ).decode()  # some strings <-> bytes conversions necessary here
-#     href = (
-#         f'<a href="data:{mimetype};base64,{b64}" download="{filename}">{label}</a>'
-#     )
-#     return href

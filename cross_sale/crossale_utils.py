@@ -149,4 +149,4 @@ def valid_product_value(metrics, numbers_gs, m, window=3):
   return final_gold_standart, final_model_rec
 
 if __name__ == "__main__":
-	None
+  pass

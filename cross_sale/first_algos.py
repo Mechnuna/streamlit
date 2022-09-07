@@ -17,7 +17,13 @@ try:
 except NameError:  # python 3 does not have an 'xrange'
     xrange = range
 
-
+def mean_reciprocal_rank(predictions):
+    mrr = 0.0
+    for mass in predictions:
+        if mass:
+            mrr += 1/(mass[0] + 1)
+    return (mrr/len(predictions))
+    
 def _require_positive_k(k):
     if k <= 0:
         raise ValueError("ranking position k should be positive")
