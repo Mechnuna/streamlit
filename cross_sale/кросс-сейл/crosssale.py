@@ -30,7 +30,7 @@ def get_static_store() -> Dict:
 def cross_sale(label='name'):
 	'''Основная функция для модели похожих товаров'''
 	all_db = None
-	if st.button("Clear file list"):
+	if st.button("Clear file list and folder csv"):
 		all_db = None
 		os.system('cd csv;rm -rf *')
 
@@ -187,7 +187,7 @@ def main():
 		new_data = df
 
 		all_trimmer = new_data.index #url всех триммеров
-		all_rec = new_data.columns #названия всех товаров для кросс-сейла
+		all_rec = list(new_data.columns)[1:] #названия всех товаров для кросс-сейла
 
 		#запускаем цикл по ДатаФрейму
 		for url in all_trimmer:
@@ -205,7 +205,7 @@ def main():
 			numbers_gs[offer_id] = numbers_gs_mass
 
 
-	'''Загружаем JSON с рекомендацией от модели и парсим его'''
+	#Загружаем JSON с рекомендацией от модели и парсим его
 
 	st.text("")
 	st.write("Загрузите JSON")
@@ -240,11 +240,6 @@ def main():
 			else:
 				model_recommendation_mass.append(offer_id['name'])
 		model_recommendation[url_json_elem] = model_recommendation_mass
-	
-	if options == 'Похожие':
-		show_mass = st.radio("Посмотреть получившийся массив?", ['Нет', 'Да'], key='yes_no2')
-		if show_mass == 'Да':
-			st.write(model_recommendation)
 
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
