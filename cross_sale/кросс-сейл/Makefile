@@ -1,11 +1,12 @@
 all:
-	@pip install --upgrade pip
 	@pip install -r requirements.txt
 	@mkdir csv
+	@mkdir json
 	@streamlit run crosssale.py
 run:
 	@mkdir csv
+	@mkdir json
 	@streamlit run crosssale.py
-clean:
+fclean:
 	@rm -rf csv
-
+	@rm -rf json

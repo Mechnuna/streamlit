@@ -210,36 +210,78 @@ def main():
 	st.text("")
 	st.write("Загрузите JSON")
 
+	rec = None
+	offers = None
 	json_file = st.file_uploader(
 			"",
 			key="json",
+			type=["zip", "json", "csv"], 
+			accept_multiple_files=True
 		)
+	json_flag = 0
 
 	if json_file:
-		js = json.load(json_file)
+		for file_rec in json_file:
+			if len(json_file) == 1:
+				if file_rec.type == "application/zip":
+					with zipfile.ZipFile(file_rec, "r") as z:
+							z.extractall("json/")
+							dir_name = 'json'
+							for filename in os.listdir(dir_name):
+								if filename == 'rec.csv':
+									json_flag = 2
+									rec = pd.read_csv(dir_name + '/rec.csv')
+								elif filename == 'offers.csv':
+									offers = pd.read_csv(dir_name + '/offers.csv',index_col="OFFERID")
+				elif file_rec.type == "application/json":
+					json_flag = 1
+					js = json.load(file_rec)
+				else:
+					print(file_rec.type)
+			else:
+				if file_rec.name == 'rec.csv':
+					json_flag = 2
+					rec = pd.read_csv(file_rec)
+				elif file_rec.name == 'offers.csv':
+					offers = pd.read_csv(file_rec,index_col="OFFERID")
 
 	else:
 		st.info(
 			f"""
-				👆 Загрузите сгенерированный каталог с рекомендациями в формате json
+				👆 Загрузите сгенерированный каталог с рекомендациями в формате json или zip с файлами csv
 				"""
 		)
 		st.stop()
+	if json_flag == 1:
+		json_elem = js["recommendations"]
+		# Находим рекомендаций для каждого товара
+		for elem in json_elem:
+			model_recommendation_mass = []
+			url_json_elem = return_id(elem['urlLink'])
+			mass_rec_id = elem["recommendItems"]
+			
+			for offer_id in mass_rec_id:
+				if options == 'Похожие':
+					model_recommendation_mass.append(return_id(offer_id['urlLink']))
+				else:
+					model_recommendation_mass.append(offer_id['name'])
+			model_recommendation[url_json_elem] = model_recommendation_mass
 
-
-	json_elem = js["recommendations"]
-	# Находим рекомендаций для каждого товара
-	for elem in json_elem:
-		model_recommendation_mass = []
-		url_json_elem = return_id(elem['urlLink'])
-		mass_rec_id = elem["recommendItems"]
-		
-		for offer_id in mass_rec_id:
-			if options == 'Похожие':
-				model_recommendation_mass.append(return_id(offer_id['urlLink']))
-			else:
-				model_recommendation_mass.append(offer_id['name'])
-		model_recommendation[url_json_elem] = model_recommendation_mass
+	if json_flag == 2:
+		for i in rec.index:
+			name = rec.iloc[i]['SOMEID']
+			id_product = return_id(offers.loc[name]['URL'])
+			name2 = rec.iloc[i]['RECOMMENDATIONOFFERID']
+			try:
+				model_recommendation[str(int(id_product))].append(return_id(offers.loc[name2]['URL']))
+			except:
+				model_recommendation[str(int(id_product))] = []
+				model_recommendation[str(int(id_product))].append(return_id(offers.loc[name2]['URL']))
+	
+	# if options == 'Похожие':
+	show_mass = st.radio("Посмотреть получившийся массив?", ['Нет', 'Да'], key='yes_no2')
+	if show_mass == 'Да':
+		st.write(model_recommendation)
 
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
