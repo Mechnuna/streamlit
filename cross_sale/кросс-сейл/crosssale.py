@@ -5,6 +5,7 @@ import copy
 import zipfile
 import os
 import re
+import datetime
 ###################################
 
 from st_aggrid import AgGrid
@@ -26,6 +27,14 @@ from typing import Dict
 def get_static_store() -> Dict:
     """Этот словарь инициализируется один раз и может использоваться для хранения загруженных файлов."""
     return {},{}
+
+
+def write_logs(algorithm, options, ndcg_result, map_result, mrr_result):
+	with open('logs/result','a') as f:
+		now = datetime.datetime.now()
+		new_text = f"{now} Model:{options} Algorithm {algorithm}\nNDCG:{ndcg_result} MAP:{map_result} MRR:{mrr_result}\n\n"
+		f.write(new_text)
+
 
 def cross_sale(label='name'):
 	'''Основная функция для модели похожих товаров'''
@@ -321,13 +330,13 @@ def main():
 	windows = st.number_input("Задать окошко валидности", key="win1_r",value=6,step=1,
 	help="Окошко валидности - допустимая погрешность в порядке товара в ленте. Например: \n\
 		[1,3,4,5,6,7] при окошке 3 товар под номером 4 может быть на 2,3,4 местах")
-	options = st.radio("Выберите алгоритм", ['1', '2'], key='algorithm_radio')
+	options2 = st.radio("Выберите алгоритм", ['1', '2'], key='algorithm_radio')
 	windows //= 2
 	go_button = st.button('Подсчитать')
 
 	if go_button:
 
-		if options == '1':
+		if options2 == '1':
 
 			st.markdown("# Способ первый")
 			st.markdown(desc_alg1,unsafe_allow_html=True)
@@ -339,17 +348,24 @@ def main():
 				expan_r = st.expander("Посмотреть DCG, MAX DCG")
 				with expan_r:
 					result_2 = ndcg_at(final_model_rec, final_gold_standart)
+				map_result = mean_average_precision(final_model_rec, final_gold_standart)
+				mrr_result = mean_reciprocal_rank(final_gold_standart)
 				st.write("Cравнение по значениям")
 				st.write("NDCG:",result_2)
-				st.write("MAP:",mean_average_precision(final_model_rec, final_gold_standart))	
-				st.write("MRR:",mean_reciprocal_rank(final_gold_standart))
+				st.write("MAP:",map_result)	
+				st.write("MRR:",mrr_result)
 
 				if result_2 >= 0.4:
 					st.markdown("### ВСЕ ХОРОШО")
 				else:
 					st.markdown("### БЫЛО ПОЛУЧШЕ")
+				write_logs(1, options, result_2, map_result, mrr_result)
 
-		elif options == '2':
+
+				
+
+
+		elif options2 == '2':
 
 			st.markdown("# Способ второй")
 			st.markdown(desc_alg2,unsafe_allow_html=True)
@@ -377,6 +393,7 @@ def main():
 					st.markdown("### ВСЕ ХОРОШО")
 				else:
 					st.markdown("### БЫЛО ПОЛУЧШЕ")
+				write_logs(2, options, final, None, None)
 
 
 if __name__ == '__main__':
