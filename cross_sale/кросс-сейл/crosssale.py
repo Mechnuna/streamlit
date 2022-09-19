@@ -267,22 +267,23 @@ def main():
 					model_recommendation_mass.append(offer_id['name'])
 			model_recommendation[url_json_elem] = model_recommendation_mass
 
+
 	if json_flag == 2:
 		for i in rec.index:
 			name = rec.iloc[i]['SOMEID']
 			id_product = return_id(offers.loc[name]['URL'])
-			name2 = rec.iloc[i]['RECOMMENDATIONOFFERID']
-			try:
-				model_recommendation[str(int(id_product))].append(return_id(offers.loc[name2]['URL']))
-			except:
-				model_recommendation[str(int(id_product))] = []
-				model_recommendation[str(int(id_product))].append(return_id(offers.loc[name2]['URL']))
+			if gold_standart.get(id_product):
+				name2 = rec.iloc[i]['RECOMMENDATIONOFFERID']
+				try:
+					model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+				except:
+					model_recommendation[id_product] = []
+					model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
 	
 	# if options == 'Похожие':
 	show_mass = st.radio("Посмотреть получившийся массив?", ['Нет', 'Да'], key='yes_no2')
 	if show_mass == 'Да':
-		st.write(model_recommendation)
-
+		st.write(gold_standart)
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
 	metrics_name = {} # словарь для хранения названий товаров
