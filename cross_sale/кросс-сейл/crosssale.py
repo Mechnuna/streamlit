@@ -235,7 +235,8 @@ def main():
 				if file_rec.type == "application/zip":
 					with zipfile.ZipFile(file_rec, "r") as z:
 							z.extractall("json/")
-							dir_name = 'json'
+							zipname = file_rec.name.strip('.zip')
+							dir_name = 'json/' + zipname 
 							for filename in os.listdir(dir_name):
 								if filename == 'rec.csv':
 									json_flag = 2
