@@ -41,7 +41,7 @@ def cross_sale(label='name'):
 	all_db = None
 	if st.button("Clear file list and folder csv"):
 		all_db = None
-		os.system('cd csv;rm -rf *')
+		os.system('rm -rf csv json; mkdir csv json')
 
 	uploaded_file = st.file_uploader("Upload", type=["zip", "csv"], accept_multiple_files=True)
 
@@ -56,7 +56,6 @@ def cross_sale(label='name'):
 						#работаем только с файлами csv
 						x = re.search('.csv$', filename)
 						if x:
-							print('csv/'+filename)
 							if n == 0:
 								all_db = pd.read_csv('csv/'+filename)
 								file_container = st.expander("Проверьте ваш загруженный файл .csv")
@@ -236,7 +235,7 @@ def main():
 					with zipfile.ZipFile(file_rec, "r") as z:
 							z.extractall("json/")
 							zipname = file_rec.name.strip('.zip')
-							dir_name = 'json/' + zipname 
+							dir_name = 'json/'
 							for filename in os.listdir(dir_name):
 								if filename == 'rec.csv':
 									json_flag = 2
@@ -246,8 +245,6 @@ def main():
 				elif file_rec.type == "application/json":
 					json_flag = 1
 					js = json.load(file_rec)
-				else:
-					print(file_rec.type)
 			else:
 				if file_rec.name == 'rec.csv':
 					json_flag = 2
@@ -285,15 +282,22 @@ def main():
 			if gold_standart.get(id_product):
 				name2 = rec.iloc[i]['RECOMMENDATIONOFFERID']
 				try:
-					model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+					model_recommendation[id_product].append(return_id(offers.loc[name2]['URL']))
 				except:
 					model_recommendation[id_product] = []
-					model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+					model_recommendation[id_product].append(return_id(offers.loc[name2]['URL']))
 	
 	# if options == 'Похожие':
 	show_mass = st.radio("Посмотреть получившийся массив?", ['Нет', 'Да'], key='yes_no2')
 	if show_mass == 'Да':
 		st.write(gold_standart)
+		'''удалить потом'''
+		# with open('newfile.txt', 'w') as f:
+		# 	f.write(str(gold_standart))
+		# 	print("ok")
+		# with open('newfile2.txt', 'w') as f:
+		# 	f.write(str(model_recommendation))
+
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
 	metrics_name = {} # словарь для хранения названий товаров
@@ -319,7 +323,10 @@ def main():
 	with but4:
 		hide_rec = st.button("Скрыть рекомендации")
 
-
+	q = st.radio("Show?", ['1', '2'], key='lol')
+	if q == '2':
+		print(metrics)
+		st.write(metrics)
 	#Посмотреть наглядно что предлагает модель и золотой стандарт
 	if show_rec:
 		st.markdown('<h2 style="font-size:24px;">ТОП 10 ТОВАРОВ ДЛЯ ТРИММЕРА</h2>', unsafe_allow_html=True)
