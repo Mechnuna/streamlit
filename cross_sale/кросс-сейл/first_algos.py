@@ -4,7 +4,7 @@ import numpy as np
 
 import warnings
 
-import streamlit as st
+# import streamlit as st
 
 __all__ = [
     'mean_average_precision',
@@ -100,10 +100,15 @@ def ndcg_at(predictions, labels, k=10, assume_unique=True):
             dcg = gains[dcg_mask].sum()
             # the max DCG is sum of gains where the index < the label set size
             max_dcg = gains[arange < n_lab].sum()
-            st.write(f"DCG: {dcg} MAX DCG: {max_dcg}")
+            # st.write(f"DCG: {dcg} MAX DCG: {max_dcg}")
             if max_dcg == 0:
               return 0
             return dcg / max_dcg
         else:
             return _warn_for_empty_labels()
     return _mean_ranking_metric(predictions, labels, _inner_ndcg)
+
+if __name__ == '__main__':
+    a = [[1, 2, 8 ,6, 7, 3, 4, 19, 12, 13, 14, 15, 5]]
+    b = [[1, 2]]
+    print(ndcg_at(a, b))

@@ -18,9 +18,12 @@ from functionforDownloadButtons import download_button
 from crossale_utils import *
 from first_algos import ndcg_at, mean_average_precision, mean_reciprocal_rank
 from second_algos import ndcg_at_k
+from my_algos import my_ndcg
 from simlar_utils import similar
 ###################################
 from typing import Dict
+from gs import GS
+from ns import NS
 
 
 @st.cache(allow_output_mutation=True)
@@ -41,7 +44,7 @@ def cross_sale(label='name'):
 	all_db = None
 	if st.button("Clear file list and folder csv"):
 		all_db = None
-		os.system('rm -rf csv json; mkdir csv json')
+		os.system('rm -rf json; mkdir json')
 
 	uploaded_file = st.file_uploader("Upload", type=["zip", "csv"], accept_multiple_files=True)
 
@@ -117,7 +120,7 @@ def main():
 		width=100,
 	)
 
-	options = st.radio("Выберите алгоритм", ['Кросс-сейл/Альтернативные', 'Похожие'], key='algorithm_')
+	options = st.radio("Выберите алгоритм", ['Кросс-сейл', 'Альтернативные', 'Похожие'], key='algorithm_')
 	
 	model_recommendation = {} # Словарь для хранения рекомендаций по модели
 	gold_standart,numbers_gs = get_static_store() # Словарь для хранения рекомендаций по золотому стандарту  и оценок релевантности по золотому стандарту
@@ -125,92 +128,34 @@ def main():
 	c29, c30, c31 = st.columns([1, 6, 1])
 
 	with c30:
-		if options == 'Кросс-сейл/Альтернативные':
-			all_db = cross_sale()
+		if options == 'Кросс-сейл':
+			new_data = pd.read_csv('csv/Crosssale.csv', index_col='name')
+			label = 'name'
+		elif options == 'Альтернативные':
+			new_data = pd.read_csv('csv/Alternative.csv', index_col='name')
 			label = 'name'
 		elif options == 'Похожие':
-			gold_standart, numbers_gs = similar(gold_standart, numbers_gs)
+			gold_standart, numbers_gs = GS, NS
 
-	if options == 'Кросс-сейл/Альтернативные':
+	if options != 'Похожие':
 
-		gb = GridOptionsBuilder.from_dataframe(all_db)
+			all_trimmer = new_data.index #url всех триммеров
+			all_rec = list(new_data.columns)[1:] #названия всех товаров для кросс-сейла
 
-		gb.configure_default_column()
-		gb.configure_selection(selection_mode="multiple", use_checkbox=True)
-		gb.configure_side_bar()
-		gridOptions = gb.build()
+			#запускаем цикл по ДатаФрейму
+			for url in all_trimmer:
+				gold_standart_pair = {}
+				numbers_gs_mass = []
 
-		st.success(
-			f"""
-				💡 Подсказка! Удерживайте shift чтобы выбрать несколько строк!
-				"""
-		)
+				one_line = new_data.loc[url]
+				for name_rec in all_rec:
+					gold_standart_pair[name_rec.strip()]=new_data[name_rec][url]/100 # Засовываем название и оценку релевантности в словарь
+					numbers_gs_mass.append(new_data[name_rec][url]/100)
 
-		response = AgGrid(
-			all_db,
-			gridOptions=gridOptions,
-			enable_enterprise_modules=True,
-			update_mode=GridUpdateMode.MODEL_CHANGED,
-			data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-			fit_columns_on_grid_load=False,
-		)
-
-		df = pd.DataFrame(response["selected_rows"])
-
-		try:
-			df = df.set_index(label)
-		except:
-			st.write("Выберите хотя бы один товар")
-
-		st.subheader("Посмотреть на результат 👇 ")
-		st.text("")
-
-		but1, but2, _ = st.columns(3)
-
-		with but1:
-			show_table = st.button("Показать таблицу")
-		with but2:
-			hide_table = st.button("Скрыть таблицу")
-
-		if show_table:
-			st.table(df)
-
-			c29, c30, c31 = st.columns([1, 1, 2])
-
-			with c29:
-
-				CSVButton = download_button(
-					df,
-					"File.csv",
-					"Download to CSV",
-				)
-
-			with c30:
-				CSVButton = download_button(
-					df,
-					"File.csv",
-					"Download to TXT",
-				)
-			st.stop()
-		new_data = df
-
-		all_trimmer = new_data.index #url всех триммеров
-		all_rec = list(new_data.columns)[1:] #названия всех товаров для кросс-сейла
-
-		#запускаем цикл по ДатаФрейму
-		for url in all_trimmer:
-			gold_standart_pair = {}
-			numbers_gs_mass = []
-
-			one_line = new_data.loc[url]
-			for name_rec in all_rec:
-				gold_standart_pair[name_rec.strip()]=new_data[name_rec][url]/100 # Засовываем название и оценку релевантности в словарь
-				numbers_gs_mass.append(new_data[name_rec][url]/100)
-
-			offer_id = return_id(url) # вырезаем offer_id из ссылки 
-			numbers_gs_mass.sort(reverse=True) # сортируем все элементы по возрастанию
-			gold_standart[offer_id] = gold_standart_pair # Засовываем по offer_id словарь с оценкой релевантности товаров
-			numbers_gs[offer_id] = numbers_gs_mass
+				offer_id = return_id(url) # вырезаем offer_id из ссылки 
+				numbers_gs_mass.sort(reverse=True) # сортируем все элементы по возрастанию
+				gold_standart[offer_id] = gold_standart_pair # Засовываем по offer_id словарь с оценкой релевантности товаров
+				numbers_gs[offer_id] = numbers_gs_mass
 
 
 	#Загружаем JSON с рекомендацией от модели и парсим его
@@ -281,22 +226,18 @@ def main():
 			id_product = return_id(offers.loc[name]['URL'])
 			if gold_standart.get(id_product):
 				name2 = rec.iloc[i]['RECOMMENDATIONOFFERID']
-				try:
-					model_recommendation[id_product].append(return_id(offers.loc[name2]['URL']))
-				except:
-					model_recommendation[id_product] = []
-					model_recommendation[id_product].append(return_id(offers.loc[name2]['URL']))
-	
-	# if options == 'Похожие':
-	show_mass = st.radio("Посмотреть получившийся массив?", ['Нет', 'Да'], key='yes_no2')
-	if show_mass == 'Да':
-		st.write(gold_standart)
-		'''удалить потом'''
-		# with open('newfile.txt', 'w') as f:
-		# 	f.write(str(gold_standart))
-		# 	print("ok")
-		# with open('newfile2.txt', 'w') as f:
-		# 	f.write(str(model_recommendation))
+				if options == 'Похожие':
+					try:
+						model_recommendation[id_product].append(str(int(name2)))
+					except:
+						model_recommendation[id_product] = []
+						model_recommendation[id_product].append(str(int(name2)))
+				else:
+					try:
+						model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+					except:
+						model_recommendation[id_product] = []
+						model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
 
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
@@ -322,11 +263,6 @@ def main():
 		show_rec = st.button("Посмотреть рекомендации")
 	with but4:
 		hide_rec = st.button("Скрыть рекомендации")
-
-	q = st.radio("Show?", ['1', '2'], key='lol')
-	if q == '2':
-		print(metrics)
-		st.write(metrics)
 	#Посмотреть наглядно что предлагает модель и золотой стандарт
 	if show_rec:
 		st.markdown('<h2 style="font-size:24px;">ТОП 10 ТОВАРОВ ДЛЯ ТРИММЕРА</h2>', unsafe_allow_html=True)
@@ -353,6 +289,10 @@ def main():
 
 			with ans1:
 				final_gold_standart, final_model_rec = valid_product_value(metrics, numbers_gs, copy.deepcopy(metrics), windows)
+				with open ('final_gold_standart.txt', 'w') as f:
+					f.write(str(final_gold_standart))
+				with open ('final_model_rec.txt', 'w') as f:
+					f.write(str(final_model_rec))
 				expan_r = st.expander("Посмотреть DCG, MAX DCG")
 				with expan_r:
 					result_2 = ndcg_at(final_model_rec, final_gold_standart)
@@ -386,15 +326,9 @@ def main():
 				for offer_id in new_metrics:
 					final_model_rec.append(metrics[offer_id])
 					final_gold_standart.append(numbers_gs[offer_id])
-
-				sums = 0
-				expan_l = st.expander("Посмотреть DCG, MAX DCG")
-				with expan_l:
-					for i in range(len(final_model_rec)):
-						l = ndcg_at_k(final_model_rec[i], final_gold_standart[i], 10, 1)
-						sums += l
+		
+				final = my_ndcg(final_model_rec, final_gold_standart)
 				st.write("Сравнение по релевантности из Золотого Стандарта")
-				final = sums/len(final_model_rec)
 				st.write('NDCG',final)
 
 				if final >= 0.4:

@@ -19,8 +19,9 @@ from crossale_utils import *
 from first_algos import ndcg_at, mean_average_precision, mean_reciprocal_rank
 from second_algos import ndcg_at_k
 from simlar_utils import similar
+from my_algos import my_ndcg
 ###################################
-from typing import Dict
+from typing import Dict, final
 
 
 @st.cache(allow_output_mutation=True)
@@ -257,12 +258,19 @@ def main():
 			name = rec.iloc[i]['SOMEID']
 			id_product = return_id(offers.loc[name]['URL'])
 			name2 = rec.iloc[i]['RECOMMENDATIONOFFERID']
-			try:
-				model_recommendation[id_product].append(return_id(offers.loc[name2]['URL']))
-			except:
-				model_recommendation[id_product] = []
-				model_recommendation[id_product].append(return_id(offers.loc[name2]['URL']))
-		
+			if options == 'Похожие':
+				try:
+					model_recommendation[id_product].append(str(int(name2)))
+				except:
+					model_recommendation[id_product] = []
+					model_recommendation[id_product].append(str(int(name2)))
+			else:
+				try:
+					model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+				except:
+					model_recommendation[id_product] = []
+					model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+	
 	if json_flag == 1:
 		json_elem = js["recommendations"]
 		# Находим рекомендаций для каждого товара
@@ -363,14 +371,15 @@ def main():
 					final_model_rec.append(metrics[offer_id])
 					final_gold_standart.append(numbers_gs[offer_id])
 
-				sums = 0
-				expan_l = st.expander("Посмотреть DCG, MAX DCG")
-				with expan_l:
-					for i in range(len(final_model_rec)):
-						l = ndcg_at_k(final_model_rec[i], final_gold_standart[i], 10, 1)
-						sums += l
+				final = my_ndcg(final_model_rec, final_gold_standart)
+				# sums = 0
+				# expan_l = st.expander("Посмотреть DCG, MAX DCG")
+				# with expan_l:
+				# 	for i in range(len(final_model_rec)):
+				# 		l = ndcg_at_k(final_model_rec[i], final_gold_standart[i], 10, 1)
+				# 		sums += l
 				st.write("Сравнение по релевантности из Золотого Стандарта")
-				final = sums/len(final_model_rec)
+				# final = sums/len(final_model_rec)
 				st.write('NDCG',final)
 
 				if final >= 0.4:

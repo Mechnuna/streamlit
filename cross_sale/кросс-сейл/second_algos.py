@@ -1,5 +1,5 @@
 import numpy as np
-import streamlit as st
+# import streamlit as st
 import copy
 
 def precision_at_k(r, k):
@@ -161,10 +161,14 @@ def ndcg_at_k(r, mass,k,  method=0,dcg_max=2):
     Returns:
         Normalized discounted cumulative gain
     """
-    dcg_max = dcg_at_k(sorted(r, reverse=True), k, method)
+    # dcg_max = dcg_at_k(sorted(r, reverse=True), k, method)
     # mass = [2 for i in range(len(r))]
     dcg_max = dcg_at_k(mass, k, method)
     if not dcg_max:
         return 0.
-    st.write(f"DCG: {dcg_at_k(r, k, method)}\n MAX DCG: {dcg_max}")
+    # st.write(f"DCG: {dcg_at_k(r, k, method)}\n MAX DCG: {dcg_max}")
     return dcg_at_k(r, k, method) / dcg_max
+
+
+if __name__ == '__main__':
+    print(ndcg_at_k([0,1,1],[1,1,1],3))
