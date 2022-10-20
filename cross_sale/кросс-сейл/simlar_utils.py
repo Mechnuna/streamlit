@@ -70,12 +70,9 @@ def similar(gold_standart,numbers_gs):
 	options = st.radio("Посмотреть получившийся массив?", ['Нет', 'Да'], key='yes_no')
 
 	if options == 'Да':
-		# st.write(gold_standart)
 		with open('newfile.txt', 'w') as f:
 			f.write(gold_standart)
 			print("ok")
-		# print(gold_standart)
-		# print("\n\n\n\n\n")
 
 	st.text("")
 	return gold_standart, numbers_gs

@@ -1,5 +1,5 @@
 import numpy as np
-# import streamlit as st
+import streamlit as st
 import copy
 
 def precision_at_k(r, k):
@@ -166,7 +166,7 @@ def ndcg_at_k(r, mass,k,  method=0,dcg_max=2):
     dcg_max = dcg_at_k(mass, k, method)
     if not dcg_max:
         return 0.
-    # st.write(f"DCG: {dcg_at_k(r, k, method)}\n MAX DCG: {dcg_max}")
+    st.write(f"DCG: {dcg_at_k(r, k, method)}\n MAX DCG: {dcg_max}")
     return dcg_at_k(r, k, method) / dcg_max
 
 

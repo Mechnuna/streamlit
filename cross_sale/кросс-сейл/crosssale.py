@@ -42,7 +42,7 @@ def write_logs(algorithm, options, ndcg_result, map_result, mrr_result):
 def cross_sale(label='name'):
 	'''Основная функция для модели похожих товаров'''
 	all_db = None
-	if st.button("Clear file list and folder csv"):
+	if st.button("Clear file list and folder json"):
 		all_db = None
 		os.system('rm -rf json; mkdir json')
 
@@ -121,7 +121,6 @@ def main():
 	)
 
 	options = st.radio("Выберите алгоритм", ['Кросс-сейл', 'Альтернативные', 'Похожие'], key='algorithm_')
-	
 	model_recommendation = {} # Словарь для хранения рекомендаций по модели
 	gold_standart,numbers_gs = get_static_store() # Словарь для хранения рекомендаций по золотому стандарту  и оценок релевантности по золотому стандарту
 	
@@ -129,7 +128,15 @@ def main():
 
 	with c30:
 		if options == 'Кросс-сейл':
-			new_data = pd.read_csv('csv/Crosssale.csv', index_col='name')
+			crosale_checkbox = st.radio("Выберите csv файл", ['Лески 90', 'Лески разные', 'Триммеры Новый каталог'])
+			match crosale_checkbox:
+				case 'Лески 90':
+					file_csv = 'csv/Crosssale90.csv'
+				case 'Лески разные':
+					file_csv = 'csv/Crosssale.csv'
+				case 'Триммеры Новый каталог':
+					file_csv = 'csv/Crosssale50trimmer.csv'
+			new_data = pd.read_csv(file_csv, index_col='name')
 			label = 'name'
 		elif options == 'Альтернативные':
 			new_data = pd.read_csv('csv/Alternative.csv', index_col='name')
@@ -156,8 +163,6 @@ def main():
 				numbers_gs_mass.sort(reverse=True) # сортируем все элементы по возрастанию
 				gold_standart[offer_id] = gold_standart_pair # Засовываем по offer_id словарь с оценкой релевантности товаров
 				numbers_gs[offer_id] = numbers_gs_mass
-
-
 	#Загружаем JSON с рекомендацией от модели и парсим его
 
 	st.text("")
@@ -219,7 +224,7 @@ def main():
 					model_recommendation_mass.append(offer_id['name'])
 			model_recommendation[url_json_elem] = model_recommendation_mass
 
-
+	j = []
 	if json_flag == 2:
 		for i in rec.index:
 			name = rec.iloc[i]['SOMEID']
@@ -230,15 +235,16 @@ def main():
 					try:
 						model_recommendation[id_product].append(str(int(name2)))
 					except:
+						print("MAKE", id_product)
 						model_recommendation[id_product] = []
 						model_recommendation[id_product].append(str(int(name2)))
 				else:
 					try:
 						model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
 					except:
+						j.append(id_product)
 						model_recommendation[id_product] = []
 						model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
-
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
 	metrics_name = {} # словарь для хранения названий товаров
@@ -254,6 +260,8 @@ def main():
 					pass
 		if metrics_dic:
 			metrics[offer_id] = metrics_dic
+		else:
+			print(offer_id)
 		if names:
 			metrics_name[offer_id] = names
 
@@ -270,7 +278,6 @@ def main():
 
 	new_metrics, name_gs = print_top5(metrics, metrics_name, gold_standart, print_=False)
 
-
 	windows = st.number_input("Задать окошко валидности", key="win1_r",value=6,step=1,
 	help="Окошко валидности - допустимая погрешность в порядке товара в ленте. Например: \n\
 		[1,3,4,5,6,7] при окошке 3 товар под номером 4 может быть на 2,3,4 местах")
@@ -279,7 +286,6 @@ def main():
 	go_button = st.button('Подсчитать')
 
 	if go_button:
-
 		if options2 == '1':
 
 			st.markdown("# Способ первый")
@@ -342,4 +348,5 @@ if __name__ == '__main__':
 	try:
 		main()
 	finally:
-		os.system('rm -rf *.csv')
+		os.system('rm -rf json; mkdir json')
+		print("RESTART")

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn import metrics
 import streamlit as st
 
 
@@ -42,7 +43,8 @@ def dict_to_sort_list(dict_):
 def print_top5(metrics, metrics_name, gold_standart, min_k=10, count=10, print_=True):
 	new_metrics = {} # создаем новый словрь для отсортированного Золотого Стандарта
 	gs_name = {}
-	for offer_id, _ in metrics.items():
+	st.text(f"Всего товаров: {len(metrics.keys())}")
+	for offer_id in metrics:
 			grade, name, new_metrics[offer_id] = dict_to_sort_list(gold_standart[offer_id])
 			gs_name[offer_id] = name
 			if len(metrics[offer_id]) >= min_k and print_:
