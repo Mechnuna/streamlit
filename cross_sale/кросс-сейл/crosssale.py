@@ -295,10 +295,12 @@ def main():
 
 			with ans1:
 				final_gold_standart, final_model_rec = valid_product_value(metrics, numbers_gs, copy.deepcopy(metrics), windows)
-				with open ('final_gold_standart.txt', 'w') as f:
-					f.write(str(final_gold_standart))
-				with open ('final_model_rec.txt', 'w') as f:
-					f.write(str(final_model_rec))
+				# Удалить потом
+				# with open ('final_gold_standart.txt', 'w') as f:
+				# 	f.write(str(final_gold_standart))
+				# with open ('final_model_rec.txt', 'w') as f:
+				# 	f.write(str(final_model_rec))
+				
 				expan_r = st.expander("Посмотреть DCG, MAX DCG")
 				with expan_r:
 					result_2 = ndcg_at(final_model_rec, final_gold_standart)
