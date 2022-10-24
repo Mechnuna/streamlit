@@ -128,16 +128,18 @@ def main():
 
 	with c30:
 		if options == 'Кросс-сейл':
-			crosale_checkbox = st.radio("Выберите csv файл", ['Лески 90', 'Лески разные', 'Триммеры Новый каталог'])
+			crosale_checkbox = st.radio("Выберите csv файл", ['Лески 90', 'Лески разные', 'Новый каталог'])
 			match crosale_checkbox:
 				case 'Лески 90':
 					file_csv = 'csv/Crosssale90.csv'
 				case 'Лески разные':
 					file_csv = 'csv/Crosssale.csv'
-				case 'Триммеры Новый каталог':
-					file_csv = 'csv/Crosssale50trimmer.csv'
+				case 'Новый каталог':
+					file_csv = 'csv/Crosssale_leski70.csv'
 			new_data = pd.read_csv(file_csv, index_col='name')
 			label = 'name'
+			
+				
 		elif options == 'Альтернативные':
 			new_data = pd.read_csv('csv/Alternative.csv', index_col='name')
 			label = 'name'
@@ -235,7 +237,6 @@ def main():
 					try:
 						model_recommendation[id_product].append(str(int(name2)))
 					except:
-						print("MAKE", id_product)
 						model_recommendation[id_product] = []
 						model_recommendation[id_product].append(str(int(name2)))
 				else:
@@ -245,6 +246,7 @@ def main():
 						j.append(id_product)
 						model_recommendation[id_product] = []
 						model_recommendation[id_product].append(offers.loc[name2]['NAME'].strip())
+
 	#Выдаем всем товарам из сгенерированного JSON оценку релевантности из Золотого Стандарта
 	metrics = {} # словарь для хранения оценки релевантности к каждому товару 
 	metrics_name = {} # словарь для хранения названий товаров
@@ -260,8 +262,6 @@ def main():
 					pass
 		if metrics_dic:
 			metrics[offer_id] = metrics_dic
-		else:
-			print(offer_id)
 		if names:
 			metrics_name[offer_id] = names
 
