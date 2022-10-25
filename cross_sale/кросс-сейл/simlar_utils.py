@@ -77,5 +77,22 @@ def similar(gold_standart,numbers_gs):
 	st.text("")
 	return gold_standart, numbers_gs
 
+
+def read_csv_similar(gold_standart,numbers_gs):
+	if st.button("Clear file list and folder"):
+		gold_standart.clear()
+		numbers_gs.clear()
+		os.system('rm -rf csv/*.csv; rm -rf json/*.csv')
+
+	for filename in os.listdir('csv'):
+		x = re.search('.csv$', filename)
+		if x:
+			shows = pd.read_csv('csv/'+filename,index_col='url_number')
+			file_container = st.expander("Проверьте ваш загруженный файл .csv")
+			gold_standart, numbers_gs = parse_csv(shows, gold_standart, numbers_gs)
+			file_container.write(shows)
+	return gold_standart, numbers_gs
+
+
 if __name__ == "__main__":
 	pass

@@ -19,7 +19,7 @@ from crossale_utils import *
 from first_algos import ndcg_at, mean_average_precision, mean_reciprocal_rank
 from second_algos import ndcg_at_k
 from my_algos import my_ndcg
-from simlar_utils import similar
+from simlar_utils import read_csv_similar, similar, read_csv_similar
 ###################################
 from typing import Dict
 from gs import GS
@@ -97,6 +97,28 @@ def cross_sale(label='name'):
 	return all_db
 
 
+def read_csv_cross(label='name'):
+	all_db = None
+	if st.button("Clear file list and folder csv/json"):
+		all_db = None
+		os.system('rm -rf csv json; mkdir csv json')
+	n = 0
+	for filename in os.listdir('csv'):
+		#работаем только с файлами csv
+		x = re.search('.csv$', filename)
+		if x:
+			if n == 0:
+				all_db = pd.read_csv('csv/'+filename, index_col=label)
+				file_container = st.expander("Проверьте ваш загруженный файл .csv")
+				file_container.write(all_db)
+				n += 1
+			else:
+				shows = pd.read_csv('csv/'+filename, index_col=label)
+				file_container = st.expander("Проверьте ваш загруженный файл .csv")
+				all_db = all_db.merge(shows, left_on=label,right_on=label)
+				file_container.write(shows)
+	return all_db
+
 
 def main():
 	'''Главная функция'''
@@ -127,24 +149,11 @@ def main():
 	c29, c30, c31 = st.columns([1, 6, 1])
 
 	with c30:
-		if options == 'Кросс-сейл':
-			crosale_checkbox = st.radio("Выберите csv файл", ['Лески 90', 'Лески разные', 'Новый каталог'])
-			match crosale_checkbox:
-				case 'Лески 90':
-					file_csv = 'csv/Crosssale90.csv'
-				case 'Лески разные':
-					file_csv = 'csv/Crosssale.csv'
-				case 'Новый каталог':
-					file_csv = 'csv/Crosssale_leski70.csv'
-			new_data = pd.read_csv(file_csv, index_col='name')
+		if options == 'Похожие':
+			gold_standart, numbers_gs = read_csv_similar(gold_standart, numbers_gs)
+		else:
+			new_data = read_csv_cross()
 			label = 'name'
-			
-				
-		elif options == 'Альтернативные':
-			new_data = pd.read_csv('csv/Alternative.csv', index_col='name')
-			label = 'name'
-		elif options == 'Похожие':
-			gold_standart, numbers_gs = GS, NS
 
 	if options != 'Похожие':
 
